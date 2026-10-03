@@ -1,0 +1,22 @@
+{
+  "name": "campus-lost-found",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c blue,green \"npm:server\" \"npm:client\"",
+    "client": "npm --prefix client run dev",
+    "server": "npm --prefix server run dev",
+    "test": "npm --prefix server test",
+    "test:server": "npm --prefix server test",
+    "test:client": "npm --prefix client test",
+    "lint": "eslint server/src server/test client/src shared",
+    "build": "npm --prefix client run build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^9.2.0",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0"
+  }
+}

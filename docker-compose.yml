@@ -1,0 +1,57 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:8080}
+      MONGO_URI: ${MONGO_URI:-}
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.8-flash}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      MATCH_HEURISTIC_THRESHOLD: ${MATCH_HEURISTIC_THRESHOLD:-45}
+      MATCH_CANDIDATE_POOL_LIMIT: ${MATCH_CANDIDATE_POOL_LIMIT:-200}
+      MATCH_CANDIDATE_LIMIT: ${MATCH_CANDIDATE_LIMIT:-10}
+      MATCH_HEURISTIC_WEIGHT: ${MATCH_HEURISTIC_WEIGHT:-0.4}
+      MATCH_GEMINI_WEIGHT: ${MATCH_GEMINI_WEIGHT:-0.6}
+      MATCH_GENERATION_LIMIT: ${MATCH_GENERATION_LIMIT:-5}
+      MATCH_GENERATION_WINDOW_MS: ${MATCH_GENERATION_WINDOW_MS:-900000}
+      MATCH_STRONG_THRESHOLD: ${MATCH_STRONG_THRESHOLD:-80}
+      MATCH_POSSIBLE_THRESHOLD: ${MATCH_POSSIBLE_THRESHOLD:-60}
+      MATCH_WEAK_THRESHOLD: ${MATCH_WEAK_THRESHOLD:-40}
+      MODERATION_AUTO_FLAG_THRESHOLD: ${MODERATION_AUTO_FLAG_THRESHOLD:-70}
+    expose:
+      - "5000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5000/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+    restart: unless-stopped

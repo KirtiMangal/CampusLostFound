@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
+      JWT_SECRET: campusfind-ci-only-secret-do-not-use-in-production
+      MONGO_URI: mongodb://127.0.0.1:27017/campusfind-ci
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 24 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
+
+      - name: Install root tooling
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm ci --prefix server
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix client
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Backend tests
+        run: npm run test:server
+
+      - name: Frontend tests
+        run: npm run test:client
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+        env:
+          MONGO_URI: mongodb://127.0.0.1:27017/campusfind-ci
+          JWT_SECRET: campusfind-ci-only-secret-do-not-use-in-production
+
+      - name: Build backend image
+        run: docker build --file server/Dockerfile --tag campusfind-backend:ci .
+
+      - name: Build frontend image
+        run: docker build --file client/Dockerfile --build-arg VITE_API_URL=/api --tag campusfind-frontend:ci .

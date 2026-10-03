@@ -1,0 +1,13 @@
+.git
+.github
+**/node_modules
+**/coverage
+**/dist
+**/build
+**/*.log
+**/.env
+**/.env.*
+!**/.env.example
+**/.DS_Store
+**/Thumbs.db
+
