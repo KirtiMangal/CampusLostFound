@@ -20,7 +20,7 @@ import {
 export function createApp() {
   const app = express();
 
-  // Trust proxy configuration
+  // Trust proxy
   const proxySetting = process.env.TRUST_PROXY;
 
   if (proxySetting) {
@@ -32,36 +32,20 @@ export function createApp() {
     );
   }
 
-  // Allowed frontend origins
-  const allowedOrigins = (
-    process.env.CLIENT_URL ||
-    (process.env.NODE_ENV === 'production'
-      ? ''
-      : 'http://localhost:5173')
-  )
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
-
   // Security headers
   app.use(helmet());
 
-  // CORS configuration
+  // --------------------------------------------------
+  // CORS
+  // --------------------------------------------------
+  //
+  // Temporarily allow the frontend from any origin.
+  // This avoids problems caused by Vercel deployment URLs
+  // changing between deployments.
+  //
   const corsOptions = {
-    origin(origin, callback) {
-      // Allow requests without an Origin header
-      // and requests from explicitly allowed origins.
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(
-        new Error(`CORS blocked origin: ${origin}`)
-      );
-    },
-
+    origin: true,
     credentials: true,
-
     methods: [
       'GET',
       'POST',
@@ -70,20 +54,21 @@ export function createApp() {
       'DELETE',
       'OPTIONS'
     ],
-
     allowedHeaders: [
       'Content-Type',
       'Authorization'
     ]
   };
 
-  // Apply CORS to all requests
   app.use(cors(corsOptions));
 
-  // Explicitly handle CORS preflight requests
+  // Explicitly handle preflight requests
   app.options(/.*/, cors(corsOptions));
 
+  // --------------------------------------------------
   // Body parsing
+  // --------------------------------------------------
+
   app.use(
     express.json({
       limit: '32kb'
@@ -98,7 +83,10 @@ export function createApp() {
     })
   );
 
-  // Logging only during development
+  // --------------------------------------------------
+  // Development logging
+  // --------------------------------------------------
+
   if (process.env.NODE_ENV !== 'production') {
     app.use(
       morgan(
@@ -112,7 +100,10 @@ export function createApp() {
     );
   }
 
+  // --------------------------------------------------
   // Routes
+  // --------------------------------------------------
+
   app.use('/api/health', healthRoutes);
 
   app.use('/api/auth', authRoutes);
@@ -129,10 +120,12 @@ export function createApp() {
 
   app.use('/api/admin', adminRoutes);
 
-  // 404 handler
+  // --------------------------------------------------
+  // Error handling
+  // --------------------------------------------------
+
   app.use(notFoundHandler);
 
-  // Global error handler
   app.use(errorHandler);
 
   return app;
