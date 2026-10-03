@@ -20,7 +20,10 @@ import {
 export function createApp() {
   const app = express();
 
-  // Trust proxy
+  // --------------------------------------------------
+  // Trust proxy configuration
+  // --------------------------------------------------
+
   const proxySetting = process.env.TRUST_PROXY;
 
   if (proxySetting) {
@@ -32,20 +35,52 @@ export function createApp() {
     );
   }
 
+  // --------------------------------------------------
+  // CORS configuration
+  // --------------------------------------------------
+
+  const allowedOrigins = (
+    process.env.CLIENT_URL ||
+    (process.env.NODE_ENV === 'production'
+      ? ''
+      : 'http://localhost:5173')
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  // --------------------------------------------------
   // Security headers
+  // --------------------------------------------------
+
   app.use(helmet());
 
   // --------------------------------------------------
   // CORS
   // --------------------------------------------------
-  //
-  // Temporarily allow the frontend from any origin.
-  // This avoids problems caused by Vercel deployment URLs
-  // changing between deployments.
-  //
+
   const corsOptions = {
-    origin: true,
+    origin(origin, callback) {
+      // Allow requests that do not contain an Origin header.
+      // This is useful for server-to-server requests and
+      // direct health checks.
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Allow only explicitly configured frontend origins.
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Reject untrusted origins without throwing an error.
+      // This allows the security tests to verify that
+      // untrusted origins do not receive CORS headers.
+      return callback(null, false);
+    },
+
     credentials: true,
+
     methods: [
       'GET',
       'POST',
@@ -54,19 +89,21 @@ export function createApp() {
       'DELETE',
       'OPTIONS'
     ],
+
     allowedHeaders: [
       'Content-Type',
       'Authorization'
     ]
   };
 
+  // Apply CORS to normal requests.
   app.use(cors(corsOptions));
 
-  // Explicitly handle preflight requests
+  // Explicitly handle browser preflight requests.
   app.options(/.*/, cors(corsOptions));
 
   // --------------------------------------------------
-  // Body parsing
+  // Request body parsing
   // --------------------------------------------------
 
   app.use(
@@ -101,7 +138,7 @@ export function createApp() {
   }
 
   // --------------------------------------------------
-  // Routes
+  // API routes
   // --------------------------------------------------
 
   app.use('/api/health', healthRoutes);
@@ -121,10 +158,14 @@ export function createApp() {
   app.use('/api/admin', adminRoutes);
 
   // --------------------------------------------------
-  // Error handling
+  // 404 handler
   // --------------------------------------------------
 
   app.use(notFoundHandler);
+
+  // --------------------------------------------------
+  // Global error handler
+  // --------------------------------------------------
 
   app.use(errorHandler);
 
