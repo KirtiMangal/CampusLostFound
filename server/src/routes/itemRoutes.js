@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { createItem, deleteItem, getItem, getItemMatches, listItems, updateItem } from '../controllers/itemController.js';
+import { createItem, deleteItem, getItem, getItemMatches, listFeaturedItems, listItems, updateItem } from '../controllers/itemController.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
 import { validateItemImages } from '../middleware/itemImageUpload.js';
 import { MATCH_CONFIG } from '../services/matchingConfig.js';
@@ -31,6 +31,7 @@ const claimSubmissionLimit = rateLimit({
   legacyHeaders: false,
   handler(_req, res) { res.status(429).json({ status: 'error', code: 'CLAIM_RATE_LIMITED', message: 'You have submitted several claims recently. Please try again later.' }); },
 });
+router.get('/featured', rateLimit({ windowMs: 15 * 60 * 1000, limit: 60, standardHeaders: 'draft-8', legacyHeaders: false }), listFeaturedItems);
 router.use(requireAuth);
 router.route('/').post(itemWriteLimit, matchingGenerationLimit, validateItemImages, createItem).get(listItems);
 router.route('/:itemId/claims').get(listItemClaims).post(claimSubmissionLimit, createClaim);

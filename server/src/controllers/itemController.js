@@ -1,7 +1,7 @@
 import AppError from '../utils/AppError.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { createItemSchema, itemIdSchema, itemListQuerySchema, updateItemSchema } from '../validators/itemValidator.js';
-import { createItem as createItemRecord, deleteItem as deleteItemRecord, getItem as getItemRecord, listItems as listItemRecords, updateItem as updateItemRecord } from '../services/itemService.js';
+import { createItem as createItemRecord, deleteItem as deleteItemRecord, getItem as getItemRecord, listFeaturedItems as listFeaturedItemRecords, listItems as listItemRecords, updateItem as updateItemRecord } from '../services/itemService.js';
 import { getMatchesForItem, scheduleMatchGeneration } from '../services/matchingService.js';
 
 function parseInput(schema, input) {
@@ -26,6 +26,10 @@ export const createItem = asyncHandler(async (req, res) => {
 export const listItems = asyncHandler(async (req, res) => {
   const query = parseInput(itemListQuerySchema, req.query);
   res.json(await listItemRecords(query, req.user));
+});
+
+export const listFeaturedItems = asyncHandler(async (_req, res) => {
+  res.json({ items: await listFeaturedItemRecords() });
 });
 
 export const getItem = asyncHandler(async (req, res) => {

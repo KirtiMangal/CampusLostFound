@@ -40,6 +40,7 @@ export const authApi = {
 };
 
 export const itemApi = {
+  featured: async () => (await api.get('/items/featured')).data,
   create: async (values, images = []) => {
     const payload = images.length ? makeItemFormData(values, images) : values;
     return (await api.post('/items', payload, images.length ? { headers: { 'Content-Type': 'multipart/form-data' } } : undefined)).data;

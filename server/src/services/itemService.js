@@ -106,6 +106,19 @@ export async function listItems(query, user) {
   };
 }
 
+export async function listFeaturedItems() {
+  const items = await Item.find({ status: 'active', isHidden: { $ne: true } })
+    .select('title description category type location date status images createdAt')
+    .sort({ createdAt: -1 })
+    .limit(4)
+    .lean();
+
+  return items.map((item) => {
+    const { owner: _owner, ...featured } = publicItem(item);
+    return featured;
+  });
+}
+
 export async function getItem(id, user) {
   ensureValidId(id);
   const item = await Item.findById(id).populate('owner', 'name').lean();
